@@ -1,6 +1,8 @@
 package org.abdev.rtfm.service.impl;
 
+import jakarta.servlet.http.HttpSession;
 import org.abdev.rtfm.dto.ChatMessage;
+import org.abdev.rtfm.mapper.DocumentMapper;
 import org.abdev.rtfm.service.ChatService;
 import org.abdev.rtfm.service.SemanticCashingService;
 import org.abdev.rtfm.util.Prompts;
@@ -14,8 +16,6 @@ import java.util.List;
 
 @Service
 public class ChatServiceImpl implements ChatService {
-
-    private final static String SESSION_ID = "abdessalam";
 
     private final VectorStore vectorStore;
     private final ChatModel chatModel;
@@ -38,7 +38,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public String askQuestion(String question) {
+    public String askQuestion(String question, HttpSession session) {
         if (question != null && question.isEmpty()) return null;
 
         String answerFromCash = this.semanticCashingService.getAnswerFromCash(question);
@@ -47,14 +47,15 @@ public class ChatServiceImpl implements ChatService {
             return answerFromCash;
         }
 
-        String recentMessages = this.getRecentMessages(SESSION_ID);
+        String sessionId = session.getId();
+        String recentMessages = this.getRecentMessages(sessionId);
 
         List<Document> documents = this.getContext(question);
-        String context = this.mapDocumentListToString(documents);
+        String context = DocumentMapper.mapDocumentListToString(documents);
 
         String answer = chatModel.call(Prompts.getPrompt(question, context, recentMessages));
 
-        this.sessionMemoryService.addMessage(SESSION_ID, new ChatMessage(question, answer));
+        this.sessionMemoryService.addMessage(sessionId, new ChatMessage(question, answer));
         this.semanticCashingService.storeQuestionAndAnswerInCash(question, answer);
         return answer;
     }
@@ -69,14 +70,5 @@ public class ChatServiceImpl implements ChatService {
         });
 
         return recentMessages.toString();
-    }
-
-    public String mapDocumentListToString(List<Document> documents) {
-        StringBuilder context = new StringBuilder();
-        for (Document doc : documents) {
-            String formattedContent = doc.getFormattedContent();
-            context.append(formattedContent);
-        }
-        return context.toString();
     }
 }
