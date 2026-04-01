@@ -9,6 +9,4 @@ import java.util.List;
 public interface EmbeddingService {
     void processEmbedding(MultipartFile document) throws IOException;
     List<Document> readDocument(MultipartFile document);
-    List<Document> splitDocumentIntoChunks(Document document);
-    List<Document> splitDocumentsIntoChunks(List<Document> documents);
 }

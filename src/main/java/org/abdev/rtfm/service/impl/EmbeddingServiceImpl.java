@@ -4,7 +4,7 @@ import org.abdev.rtfm.exception.BadInputException;
 import org.abdev.rtfm.service.EmbeddingService;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,9 +16,11 @@ import java.util.List;
 public class EmbeddingServiceImpl implements EmbeddingService {
 
     private final VectorStore vectorStore;
+    private final TextSplitter tokenTextSplitter;
 
-    public EmbeddingServiceImpl(VectorStore vectorStore) {
+    public EmbeddingServiceImpl(VectorStore vectorStore, TextSplitter tokenTextSplitter) {
         this.vectorStore = vectorStore;
+        this.tokenTextSplitter = tokenTextSplitter;
     }
 
     /*
@@ -38,11 +40,8 @@ public class EmbeddingServiceImpl implements EmbeddingService {
         }
 
         List<Document> documents = this.readDocument(document);
-
-        documents.forEach(doc -> {
-            List<Document> chunks = splitDocumentIntoChunks(doc);
-            vectorStore.add(chunks);
-        });
+        List<Document> chunks = this.tokenTextSplitter.split(documents);
+        vectorStore.add(chunks);
     }
 
     @Override
@@ -51,23 +50,4 @@ public class EmbeddingServiceImpl implements EmbeddingService {
         return tikaDocumentReader.read();
     }
 
-    @Override
-    public List<Document> splitDocumentIntoChunks(Document document) {
-        TokenTextSplitter tokenTextSplitter = TokenTextSplitter
-                .builder()
-                .withChunkSize(500)
-                .build();
-
-        return tokenTextSplitter.split(document);
-    }
-
-    @Override
-    public List<Document> splitDocumentsIntoChunks(List<Document> documents) {
-        TokenTextSplitter tokenTextSplitter = TokenTextSplitter
-                .builder()
-                .withChunkSize(500)
-                .build();
-
-        return tokenTextSplitter.split(documents);
-    }
 }

@@ -20,16 +20,16 @@ public class VectorStoreConfig {
     @Bean
     public VectorStore vectorStore(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
         return RedisVectorStore.builder(jedisPooled, embeddingModel)
-                .indexName("docs-index")                // Optional: defaults to "spring-ai-index"
-                .initializeSchema(true)                   // Optional: defaults to false
-                .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
+                .indexName("docs-index")
+                .initializeSchema(true)
+                .batchingStrategy(new TokenCountBatchingStrategy())
                 .build();
     }
 
     @Bean("semanticCashingVectorSearch")
     public VectorStore semanticCachingVectorStore(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
         return RedisVectorStore.builder(jedisPooled, embeddingModel)
-                .indexName("SemanticCashing")
+                .indexName("semantic-cashing")
                 .prefix("semantic-cashing:")
                 .metadataFields(
                         new RedisVectorStore.MetadataField("answer", Schema.FieldType.TEXT)
