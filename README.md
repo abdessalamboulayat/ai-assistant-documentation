@@ -3,8 +3,6 @@
 
 An intelligent AI assistant that ingests documentation, answers questions using **Retrieval-Augmented Generation (RAG)**, caches semantically similar queries to reduce LLM costs, and maintains **conversation memory within a session** *(cross-session memory not yet implemented)*.
 
-> The system improves over time by learning from previous interactions and avoiding redundant LLM calls.
-
 ---
 
 ## Features
@@ -19,41 +17,19 @@ An intelligent AI assistant that ingests documentation, answers questions using 
 
 ## Architecture Overview
 
----
-
 ### 1. Document Ingestion (ETL Pipeline)
-```mermaid
-flowchart LR
-    A[User Uploads Documentation] --> B[Reader]
-    B --> C[Extract Text from Files]
-    C --> D[Transformer]
-    D --> E[Split into Chunks]
-    E --> F[Generate Embeddings]
-    F --> G[Writer]
-    G --> H[Store in Redis Vector Index]
-```
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/b4e50cd4-a158-4b01-b483-4b864c5ef5c5" />
 
 #### Key Steps
 
 - Load documentation files *(Markdown, HTML, TXT)*
 - Split into ~500-token chunks *(with overlap)*
 - Generate embeddings
-- Store in Redis with metadata:
-  - Source file
+- Store in Redis with metadata
 
----
+### 2. Chat Flow
+<img width="800" height="600" alt="Diagram Basics (Community) (1)" src="https://github.com/user-attachments/assets/bd25f43e-4084-46c1-ba30-ae542a88d8bf" />
 
-### 2. Chat & Retrieval Flow
-```mermaid
-flowchart LR
-    A[User Question] --> B[Check Semantic Cache]
-    B -->|Hit| C[Return Cached Answer]
-    B -->|Miss| D[Vector Search Redis]
-    D --> E[Retrieve Relevant Chunks]
-    E --> F[Send to LLM<br/>Question + Context + Chat History]
-    F --> G[Generate Answer]
-    G --> H[Store in Cache + Memory]
-```
 
 ---
 
