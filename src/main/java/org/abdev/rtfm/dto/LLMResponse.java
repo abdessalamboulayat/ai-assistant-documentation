@@ -2,9 +2,10 @@ package org.abdev.rtfm.dto;
 
 import java.util.List;
 
-public record ChatResponseDto(
+public record LLMResponse (
         String answer,
         List<ExtractMemory> extractMemories,
-        String followUpQuestion
+        PreferenceSignal preferenceSignal
 ) {
+
 }

@@ -1,74 +1,84 @@
 package org.abdev.rtfm.service.impl;
 
 import jakarta.servlet.http.HttpSession;
-import org.abdev.rtfm.dto.ChatMessage;
-import org.abdev.rtfm.mapper.DocumentMapper;
+import org.abdev.rtfm.advisors.LongTermMemoryAdvisor;
+import org.abdev.rtfm.dto.*;
 import org.abdev.rtfm.service.ChatService;
-import org.abdev.rtfm.service.SemanticCashingService;
 import org.abdev.rtfm.util.Prompts;
-import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ChatServiceImpl implements ChatService {
 
+    private static final String USER_ID = "abdevtech";
     private final VectorStore vectorStore;
-    private final ChatModel chatModel;
-    private final SemanticCashingService semanticCashingService;
-    private final SessionMemoryService sessionMemoryService;
+    @Qualifier("googleGenAiChatModel")
+    private final ChatClient chatClient;
+    private final LongTermMemoryService longTermMemoryService;
+    private final double similarityTreshold;
 
     public ChatServiceImpl(VectorStore vectorStore,
-                           ChatModel chatModel,
-                           SemanticCashingService semanticCashingService,
-                           SessionMemoryService sessionMemoryService) {
+                           ChatClient chatClient,
+                           LongTermMemoryService longTermMemoryService,
+                           @Value("${rag.similarity.treshold}") double similarityTreshold) {
         this.vectorStore = vectorStore;
-        this.chatModel = chatModel;
-        this.semanticCashingService = semanticCashingService;
-        this.sessionMemoryService = sessionMemoryService;
+        this.chatClient = chatClient;
+        this.longTermMemoryService = longTermMemoryService;
+        this.similarityTreshold = similarityTreshold;
     }
 
     @Override
     public List<Document> getContext(String query) {
-        return vectorStore.similaritySearch(SearchRequest.builder().query(query).build());
+        return vectorStore.similaritySearch(SearchRequest.builder()
+                .query(query)
+                .similarityThreshold(this.similarityTreshold)
+                .topK(5)
+                .build());
     }
 
-    @Override
-    public String askQuestion(String question, HttpSession session) {
-        if (question != null && question.isEmpty()) return null;
+    public ChatResponseDto sendMessage(HttpSession session, String message) {
+        Prompt prompt = Prompts.promptTemplate().create(Map.of("message", message));
 
-        String answerFromCash = this.semanticCashingService.getAnswerFromCash(question);
+        LLMResponse llmResponse = this.chatClient.prompt(prompt)
+                .advisors(advisorSpec -> {
+                    advisorSpec.param(ChatMemory.CONVERSATION_ID, session.getId());
+                    advisorSpec.param(LongTermMemoryAdvisor.USER_ID, USER_ID);
+                })
+                .call()
+                .entity(LLMResponse.class);
 
-        if (answerFromCash != null && !answerFromCash.isEmpty()) {
-            return answerFromCash;
+        if (llmResponse == null) return null;
+
+        // Extract memories elements and save for long term
+        List<ExtractMemory> extractMemories = llmResponse.extractMemories() != null ? llmResponse.extractMemories() : List.of();
+        for (ExtractMemory mem : extractMemories) {
+            this.longTermMemoryService.save(USER_ID, mem);
         }
 
-        String sessionId = session.getId();
-        String recentMessages = this.getRecentMessages(sessionId);
+        // Handle user preferences
+        String followUpQuestion = null;
+        PreferenceSignal signal = llmResponse.preferenceSignal();
+        if (signal != null && signal.followUpQuestion() != null) {
+            // Store pending confirmation in session
+            session.setAttribute("pending_preference_question", signal.followUpQuestion());
+            session.setAttribute("pending_preference_topic", signal.topic());
+            followUpQuestion = signal.followUpQuestion();
+        }
 
-        List<Document> documents = this.getContext(question);
-        String context = DocumentMapper.mapDocumentListToString(documents);
-
-        String answer = chatModel.call(Prompts.getPrompt(question, context, recentMessages));
-
-        this.sessionMemoryService.addMessage(sessionId, new ChatMessage(question, answer));
-        this.semanticCashingService.storeQuestionAndAnswerInCash(question, answer);
-        return answer;
-    }
-
-    public String getRecentMessages(String sessionId) {
-        StringBuilder recentMessages = new StringBuilder();
-        List<Object> chatMessages = this.sessionMemoryService.getMessages(sessionId);
-
-        chatMessages.forEach(chatMessage -> {
-            recentMessages.append(((ChatMessage) chatMessage).question());
-            recentMessages.append(((ChatMessage) chatMessage).answer());
-        });
-
-        return recentMessages.toString();
+        return new ChatResponseDto(llmResponse.answer(), llmResponse.extractMemories(), followUpQuestion);
     }
 }

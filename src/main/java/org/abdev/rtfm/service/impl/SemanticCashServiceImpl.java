@@ -1,6 +1,6 @@
 package org.abdev.rtfm.service.impl;
 
-import org.abdev.rtfm.service.SemanticCashingService;
+import org.abdev.rtfm.service.SemanticCashService;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -11,13 +11,13 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class SemanticCashingServiceImpl implements SemanticCashingService {
+public class SemanticCashServiceImpl implements SemanticCashService {
     private final static double THRESHOLD_DEFAULT_VALUE = 0.90;
 
     private final VectorStore semanticCashingVectorSearch;
     private final double similarityTreshold = THRESHOLD_DEFAULT_VALUE;
 
-    public SemanticCashingServiceImpl(VectorStore semanticCashingVectorSearch) {
+    public SemanticCashServiceImpl(VectorStore semanticCashingVectorSearch) {
         this.semanticCashingVectorSearch = semanticCashingVectorSearch;
     }
 
@@ -46,5 +46,27 @@ public class SemanticCashingServiceImpl implements SemanticCashingService {
         return first.map(document ->
                 (String) document.getMetadata().get("answer")).orElse(null);
 
+    }
+
+    @Override
+    public boolean answerAlreadyStored(String query) {
+        SearchRequest searchRequest = SearchRequest.builder()
+                .query(query)
+                .similarityThreshold(this.similarityTreshold)
+                .topK(1)
+                .build();
+
+        return !this.semanticCashingVectorSearch.similaritySearch(searchRequest).isEmpty();
+    }
+
+    @Override
+    public List<Document> searchAnswerInCash(String question) {
+        SearchRequest searchRequest = SearchRequest.builder()
+                .query(question)
+                .similarityThreshold(this.similarityTreshold)
+                .topK(1)
+                .build();
+
+        return this.semanticCashingVectorSearch.similaritySearch(searchRequest);
     }
 }
