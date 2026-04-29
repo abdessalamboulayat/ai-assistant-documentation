@@ -1,7 +1,7 @@
 package org.abdev.rtfm.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpSession;
+import org.abdev.rtfm.dto.ChatResponseDto;
 import org.abdev.rtfm.service.ChatService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,7 +19,7 @@ public class ChatController {
     }
 
     @PostMapping
-    public String askQuestion(HttpSession session, @RequestParam("question") String question) throws JsonProcessingException {
-        return this.chatService.askQuestion(question, session);
+    public ChatResponseDto askQuestion(HttpSession session, @RequestParam("question") String question) {
+        return this.chatService.sendMessage(session, question);
     }
 }
