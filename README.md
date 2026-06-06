@@ -31,7 +31,8 @@ An intelligent AI assistant that ingests your documentation files, answers natur
 
 ## Architecture 
 ### 1. Document Ingestion (ETL Pipeline)
-<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/b4e50cd4-a158-4b01-b483-4b864c5ef5c5" />
+<img width="1114" height="806" alt="_home_my-pc_Downloads_rag_ingestion_pipeline html" src="https://github.com/user-attachments/assets/e75d0f40-a340-44f1-a038-5d1968c2a51f" />
+
 
 #### Key Steps
 
@@ -41,7 +42,8 @@ An intelligent AI assistant that ingests your documentation files, answers natur
 - Store in Redis with metadata
 
 ### 2. Chat Flow
-<img width="800" height="600" alt="Diagram Basics (Community) (1)" src="https://github.com/user-attachments/assets/bd25f43e-4084-46c1-ba30-ae542a88d8bf" />
+<img width="1099" height="1722" alt="_home_my-pc_Downloads_rag_architecture_image_style html" src="https://github.com/user-attachments/assets/f653dab9-4a07-4b99-ae28-c4081f12406d" />
+
 
 
 ---
