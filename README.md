@@ -1,9 +1,9 @@
-## AI Documentation Assistant
+## RAG pipeline with Java
 
 > Intelligent documentation Q&A powered by RAG, semantic caching, and persistent memory.
 ### RAG + Semantic Cache + Memory
 
-An intelligent AI assistant that ingests your documentation files, answers natural language questions using Retrieval-Augmented Generation, caches semantically similar queries to cut LLM costs, and remembers context across conversation turns.
+An intelligent AI assistant that ingests your documents, answers natural language questions using Retrieval-Augmented Generation, caches semantically similar queries to cut LLM costs, and remembers context across conversation turns.
 
 ---
 ## Table of Contents
@@ -20,12 +20,12 @@ An intelligent AI assistant that ingests your documentation files, answers natur
 
 | Feature | Description |
 |---|---|
-| **Document Ingestion** | ETL pipeline for Markdown, HTML, PDF, DOCX, TXT via Apache Tika |
-| **RAG Q&A** | Retrieves relevant chunks from a vector store before each LLM call |
-| **Semantic Cache** | Skips the LLM entirely when a near-identical query was already answered |
+| **Document Ingestion** | Ingestion Pipeline: Extract, Chunk, Embed, Load |
+| **RAG Q&A** | Retrieves relevant chunks from a vector store (context) before each LLM call |
+| **Semantic Cache** | Skips the LLM entirely when a near-identical question was already answered |
 | **Session Memory** | Short-term memory keeps conversation context across multiple turns |
-| **Long-term Memory** | Extracts and persists key facts about the user across sessions |
-| **Preference Learning** | Detects communication preferences and confirms them with the user |
+| **Long-term Memory** | Extracts and persists key facts such as preferences about the user across sessions |
+| **Preference Learning** | Follow up questions to understand more user preferences |
 
 ---
 
@@ -36,9 +36,9 @@ An intelligent AI assistant that ingests your documentation files, answers natur
 
 #### Key Steps
 
-- Load documentation files *(Markdown, HTML, TXT)*
+- Load your documents *(Markdown, HTML, TXT)*
 - Split into ~500-token chunks *(with overlap)*
-- Generate embeddings
+- Generate embeddings (convert each chunk into vectors)
 - Store in Redis with metadata
 
 ### 2. Chat Flow
